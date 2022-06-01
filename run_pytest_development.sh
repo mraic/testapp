@@ -1,0 +1,1 @@
+docker container exec -it  app_core_development bash -c "ENV_NAME='development' py.test"

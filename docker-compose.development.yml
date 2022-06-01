@@ -1,0 +1,40 @@
+version: '3.7'
+
+volumes:
+  postgres_data:
+
+services:
+  app_core:
+    image: app_core
+    environment:
+      - FLASK_ENV=development
+      - FLASK_APP=wsgi.py
+      - FLASK_RUN_HOST=0.0.0.0
+      - FLASK_RUN_PORT=4040
+    container_name: app_core_development
+    ports:
+      - 4040:4040
+    command: "python -u -m flask run"
+    build: .
+    restart: always
+    volumes:
+      - /var/log/app_core:/usr/src/app/log
+      - .:/usr/src/app
+    depends_on:
+      - db_app_core
+
+  db_app_core:
+    image: postgis/postgis
+    container_name: db_app_core
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - 6565:5432
+    volumes:
+      - postgres_data:/var/lib/postgrespers
+networks:
+  default:
+    external:
+      name: app_core_network

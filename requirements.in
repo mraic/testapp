@@ -1,0 +1,61 @@
+
+ipython ~= 7.27.0
+
+# Flask
+Flask ~= 2.0.0
+flask-shell-ipython ~= 0.4.1
+Flask-CORS ~= 3.0.10
+itsdangerous ~= 2.1.1
+
+# ORM, PostgreSQL driver, flask integration for ORM and db migrations management
+sqlalchemy ~= 1.4.32
+psycopg2-binary ~= 2.9.3
+flask-sqlalchemy ~= 2.5.1
+sqlalchemy-utils ~= 0.38.2
+sqlparse ~= 0.4.1
+
+# Password hashing
+passlib ~= 1.7.4
+
+# app server for deployment
+gunicorn
+
+# HTTP client
+requests ~= 2.27.0
+
+# OpenAPI
+marshmallow ~= 3.14.0
+apispec[yaml] ~= 5.1.0
+marshmallow_enum ~= 1.5.1
+
+# datetime
+arrow ~= 1.2.2
+pytz
+
+# PrettyTable, usefull for debugging
+prettytable
+
+faker ~= 13.3.1
+pandas ~= 1.4.1
+xlsxwriter ~= 3.0.1
+openpyxl ~= 3.0.9
+PyJWT ~= 2.3.0
+tzlocal  ~= 4.1
+Unipath ~= 1.1
+factory-boy ~= 3.2.0
+lorem ~= 0.1.1
+Flask-Migrate ~= 3.1.0
+flask-apispec ~= 0.11.0
+apispec ~= 5.1.0
+apispec-webframeworks ~= 0.5.2
+sqlalchemy-utils
+intervals
+sendgrid ~= 6.9.0
+
+# Some common misc functions like is_blank, Stopwatch, etc...
+seveno_pyutil ~= 0.5.8
+
+python-dotenv
+pytest
+pytest-mock
+GeoAlchemy2 ~= 0.11.1
