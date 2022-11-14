@@ -10,10 +10,10 @@ services:
       - FLASK_ENV=development
       - FLASK_APP=wsgi.py
       - FLASK_RUN_HOST=0.0.0.0
-      - FLASK_RUN_PORT=4040
+      - FLASK_RUN_PORT=6060
     container_name: app_core_development
     ports:
-      - 4040:4040
+      - 6060:6060
     command: "python -u -m flask run"
     build: .
     restart: always
@@ -31,7 +31,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     ports:
-      - 6565:5432
+      - 7777:5432
     volumes:
       - postgres_data:/var/lib/postgrespers
 networks:

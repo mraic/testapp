@@ -56,6 +56,14 @@ class ConfigBase:
     # Flask settings
     # --------------------------------------------------------------------------
 
+    # Flask-Mail
+    # --------------------------------------------------------------------------
+    MAIL_SERVER = "smtp.gmail.com"
+    MAIL_PORT = 465
+    MAIL_USERNAME = 'marko.masline@gmail.com'
+    MAIL_PASSWORD = 'zjmpvpsvcnkskfuo'
+    MAIL_USE_TLS = False
+    MAIL_USE_SSL = True
 
     # --------------------------------------------------------------------------
     # Flask-Migrate config

@@ -220,6 +220,6 @@ werkzeug==2.0.3
     # via flask
 xlsxwriter==3.0.3
     # via -r requirements.in
-
+Flask-Mail==0.9.1
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

@@ -4,7 +4,7 @@ from flask import Flask
 from flask_apispec import FlaskApiSpec
 
 from . import cli
-from .controller import bpp
+from .controller import bpp, mail
 from .db import db, migrate
 from .general import build_error_response, CustomLogException, \
     DefaultAppException, AppLogException
@@ -13,7 +13,7 @@ from .settings import environments
 import warnings
 from werkzeug.exceptions import default_exceptions
 
-#Dodati import router od svakoga controllera
+from src.controller import bank_controller, client_controller
 
 
 def marshmallow_swagger_properties(self, field, **kwargs):
@@ -78,6 +78,7 @@ def create_app(config_environment):
         compare_type=True)
 
     cli.Cli(app)
+    mail.init_app(app)
 
     # Mount blueprints
     app.register_blueprint(bpp)

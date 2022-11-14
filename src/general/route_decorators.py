@@ -1,8 +1,10 @@
 import functools
 import gzip
-from flask import request, after_this_request
 from functools import wraps
 from io import BytesIO as IO
+
+import jwt
+from flask import request, after_this_request, jsonify, current_app
 
 
 def allow_access(function):
@@ -13,6 +15,7 @@ def allow_access(function):
     :return: decorated_function
 
     """
+
     @wraps(function)
     def decorated_function(*args, **kwargs):
 
@@ -22,6 +25,25 @@ def allow_access(function):
         :param function: function parameter
         :return: decorated_functon
         """
+        token = request.environ.get('HTTP_AUTHORIZATION', None)
+
+        if token is None:
+            return jsonify(message="Token is not valid"), 401
+        try:
+            payload = jwt.decode(
+                token,
+                current_app.config.get('JWT_SECRET_KEY'),
+                algorithms=["HS256"])
+
+        except jwt.ExpiredSignatureError:
+            return jsonify(message="Token expired"), 401
+
+        except jwt.InvalidTokenError:
+            return jsonify(message="Token is not valid"), 401
+
+        except Exception as e:
+            return jsonify(message="Nesto ne valja sa tokenom"), 401
+
         return function(*args, **kwargs)
 
     return decorated_function
@@ -39,7 +61,6 @@ def log_access(log_category_id=None):
     def decorator(function):
         @wraps(function)
         def decorated_function(*args, **kwargs):
-
             return function(*args, **kwargs)
 
         return decorated_function
@@ -60,8 +81,8 @@ def gzipped(f):
             response.direct_passthrough = False
 
             if (response.status_code < 200 or
-                response.status_code >= 300 or
-                'Content-Encoding' in response.headers):
+                    response.status_code >= 300 or
+                    'Content-Encoding' in response.headers):
                 return response
             gzip_buffer = IO()
             gzip_file = gzip.GzipFile(mode='wb',
