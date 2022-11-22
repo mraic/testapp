@@ -48,13 +48,16 @@ class TransactionService:
     @staticmethod
     def generate_and_download_excel(account_id):
 
-        data_account = AccountService.get_one(_id=account_id)
+        data_account = AccountService.get_full_account(account_id=account_id)
 
-        if data_account.account is None:
+        if data_account is None:
             raise AppLogException(Status.account_does_not_exists())
 
-        transaction = TransactionSchema(many=True).dump(
-            data_account.account.transactions)
+        account = []
+        schema = AccountSchema()
+        data_acc = schema.dump(data_account)
+        data_acc['amount'] = data_acc['amount'] or 0
+        account.append(data_account)
 
         first_date = datetime(datetime.today().year, datetime.today().month, 1)
         last_date = datetime(datetime.today().year, datetime.today().month + 1,
@@ -66,38 +69,40 @@ class TransactionService:
             last_day=last_date)
 
         data = {
-            'Account amount': '',
             'Transaction amount': [],
             'Transaction date': [],
             'Transaction category': [],
         }
 
-        for j in transactions:
-            for i in range(len(transaction)):
-                data['Transaction amount'].append(transaction[i]['amount'])
-                data['Transaction date'].append(transaction[i]['date'])
-                data['Transaction category'].append(j.list_item.name)
+        for i in range(len(transactions)):
+            data['Transaction amount'].append(transactions[i].amount)
+            data['Transaction date'].append(
+                datetime.strftime(transactions[i].date, '%Y-%m-%d'))
+            data['Transaction category'].append(transactions[i].list_item.name)
 
         df_transaction = pd.DataFrame(data,
-                                      columns=['Account amount',
-                                               'Transaction amount',
-                                               'Transaction date',
-                                               'Transaction category'])
+                                      columns=[
+                                          'Transaction amount',
+                                          'Transaction date',
+                                          'Transaction category'])
 
-        df_transaction.set_index('Account amount', inplace=True)
+        df_transaction['Account amount'] = pd.Series(account[0]['amount'],
+                                                     index=df_transaction.index[
+                                                         [0]])
 
-        df_transaction.to_excel(f'{data_account.account.account_number}.xlsx',
-                                header=True)
+        df_transaction.to_excel(f'{data_account.Account.account_number}.xlsx',
+                                header=True, index=False)
+        df_transaction.set_index('Account amount', inplace=False)
         buffer = io.BytesIO()
-        df = pd.read_excel(f'{data_account.account.account_number}.xlsx',
+        df = pd.read_excel(f'{data_account.Account.account_number}.xlsx',
                            header=0)
         df.to_excel(buffer)
 
         headers = {
-            f'Content-Disposition': f'attachment; filename={data_account.account.account_number}.xlsx',
+            f'Content-Disposition': f'attachment; filename={data_account.Account.account_number}.xlsx',
             'Content-type': 'application/vnd.ms-excel'
         }
-        os.remove(f'{data_account.account.account_number}.xlsx')
+        os.remove(f'{data_account.Account.account_number}.xlsx')
 
         return Response(buffer.getvalue(), mimetype='application/vnd.ms-excel',
                         headers=headers)
