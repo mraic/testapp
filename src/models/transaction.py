@@ -2,7 +2,7 @@ import enum
 from uuid import uuid4
 
 import sqlalchemy as sa
-from sqlalchemy import orm, func
+from sqlalchemy import orm, func, desc
 from sqlalchemy.dialects.postgresql import UUID
 
 from src import db
@@ -42,13 +42,13 @@ class TransactionQuery(BaseModelMixin, db.Query):
         try:
             return db.session.query(
                 Transaction.category_id,
-                func.sum(Transaction.amount).label('total')
+                func.sum(Transaction.amount).label('total') if None else 0
             ).filter(
                 Transaction.date.between(first_day, last_day)
             ).group_by(
                 Transaction.category_id
             ).order_by(
-                func.sum(Transaction.amount).label('total')
+                func.sum(desc(Transaction.amount).label('total'))
             ).all()
         except Exception as e:
             db.session.rollback()

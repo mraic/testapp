@@ -37,19 +37,7 @@ class TransactionService:
 
         if ListItemService.get_category_prefix(
                 _id=self.transaction.category_id):
-
-            if data.account.amount < self.transaction.amount:
-                raise AppLogException(Status.insufficient_funds())
-
-            self.transaction.amount = - self.transaction.amount
-            acc = AccountService.get_one(_id=self.transaction.account_id)
-            acc.account.amount += self.transaction.amount
-            acc.alter()
-        else:
-
-            acc = AccountService.get_one(_id=self.transaction.account_id)
-            acc.account.amount += self.transaction.amount
-            acc.alter()
+            self.transaction.amount = -self.transaction.amount
 
         self.transaction.date = datetime.today()
         self.transaction.add()
@@ -78,19 +66,17 @@ class TransactionService:
             last_day=last_date)
 
         data = {
-            'Account amount': data_account.account.amount,
+            'Account amount': '',
             'Transaction amount': [],
             'Transaction date': [],
             'Transaction category': [],
         }
 
-        for i in transactions:
-            cat = i.list_item.name
-
-        for i in range(len(transaction)):
-            data['Transaction amount'].append(transaction[i]['amount'])
-            data['Transaction date'].append(transaction[i]['date'])
-            data['Transaction category'].append(cat)
+        for j in transactions:
+            for i in range(len(transaction)):
+                data['Transaction amount'].append(transaction[i]['amount'])
+                data['Transaction date'].append(transaction[i]['date'])
+                data['Transaction category'].append(j.list_item.name)
 
         df_transaction = pd.DataFrame(data,
                                       columns=['Account amount',
@@ -119,55 +105,63 @@ class TransactionService:
     @staticmethod
     def transfer_between_accounts(amount, account_id,
                                   account_id_1, category_id):
-        acc = AccountService.get_one(_id=account_id)
-        acc1 = AccountService.get_one(_id=account_id_1)
+        acc = AccountService.get_full_account(account_id=account_id)
 
-        if not (acc.account or acc1.account):
+        if not acc:
             raise AppLogException(Status.account_does_not_exists())
 
-        if acc.account.user_id != acc1.account.user_id:
+        acc1 = AccountService.get_full_account(account_id=account_id_1)
+
+        if not acc1:
+            raise AppLogException(Status.account_does_not_exists())
+
+        data = [acc, acc1]
+
+        list_account = []
+        schema = AccountSchema()
+        for i in data or []:
+            current_dict = schema.dump(i.Account)
+            current_dict['amount'] = i.amount or 0
+            list_account.append(current_dict)
+
+        if list_account[0]['user_id'] != list_account[1]['user_id']:
             raise AppLogException(Status.accounts_must_have_same_owner())
 
-        if acc1.account.status == Account.STATUSES.inactive:
+        if list_account[1]['status'] == Account.STATUSES.inactive:
             raise AppLogException(Status.account_is_not_active())
 
-        if acc.account.amount < amount:
+        if list_account[0]['amount'] < amount:
             raise AppLogException(Status.insufficient_funds())
 
         transaction_service = TransactionService(
             transaction=Transaction(
                 amount=amount,
-                account_id=acc.account.id,
+                account_id=list_account[0]['id'],
                 category_id=category_id
             )
         )
         transaction_service.create()
 
-        acc.account.amount + amount
-        acc.alter()
-
         transaction_service = TransactionService(
             transaction=Transaction(
                 amount=amount,
-                account_id=acc1.account.id,
+                account_id=list_account[1]['id'],
                 category_id='67a2aaa0-c307-4869-a3a4-8e934a888c3f'
             )
         )
         transaction_service.create()
 
-        acc1.account.amount + amount
-        acc1.alter()
-
+        acc = AccountService.get_full_account(account_id=account_id)
+        acc1 = AccountService.get_full_account(account_id=account_id_1)
         data = [acc, acc1]
-
-        list_data = []
+        list_account = []
         schema = AccountSchema()
         for i in data or []:
-            current_dict = schema.dump(i.account)
+            current_dict = schema.dump(i.Account)
+            current_dict['amount'] = i.amount or 0
+            list_account.append(current_dict)
 
-            list_data.append(current_dict)
-
-        return list_data, Status.successfully_processed()
+        return list_account, Status.successfully_processed()
 
     @staticmethod
     def get_all_trans_for_current_month(account_id, first_day, last_day):

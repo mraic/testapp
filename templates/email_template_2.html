@@ -10,13 +10,16 @@
 <table>
     {% for i in range(length) %}
         <tr>
-            <th>Account no: {{ accounts[i].account_number }}</th>
+            <th>Account no: {{ accounts[i].Account.account_number }}</th>
         </tr>
         <tr>
-            <th>Account cvv: {{ accounts[i].cvv }}</th>
+            <th>Account cvv: {{ accounts[i].Account.cvv }}</th>
         </tr>
         <tr>
-            <th>Account exp date: {{ accounts[i].expire_date }}</th>
+            <th>Account exp date: {{ accounts[i].Account.expire_date }}</th>
+        </tr>
+        <tr>
+            <th>Account amount: {{ accounts[i].amount or 0}}</th>
         </tr>
         <p>---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- </p>
 

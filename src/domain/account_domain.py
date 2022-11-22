@@ -1,11 +1,12 @@
-from datetime import datetime, date
+from random import randint
 
 from faker import Faker
 from sqlalchemy import and_
 
 from src import Account, AppLogException, User
 from src.general import Status
-from src.general.email_sender import send_accounts_to_user, created_bank_account
+from src.general.email_sender import created_bank_account, send_accounts_to_user
+from src.views import AccountSchema
 
 
 class AccountService:
@@ -23,9 +24,6 @@ class AccountService:
         AccountService.count_of_users_accounts(user_id=self.account.user_id)
 
         acc_no, cvv = AccountService.generate_cred_no_cvv()
-
-        self.account.expire_date = datetime.strptime(self.account.expire_date,
-                                                     '%m/%y')
 
         self.account.account_number = acc_no
         self.account.cvv = cvv
@@ -48,13 +46,26 @@ class AccountService:
         # if not AccountService.check_if_account_expired(data.account.id):
         #     raise AppLogException(Status.account_did_not_expire())
 
-        if isinstance(data.account.expire_date, date):
-            data.account.expire_date = self.account.expire_date
-        if isinstance(data.account.expire_date, str):
-            self.account.expire_date = datetime.strptime(
-                self.account.expire_date,
-                '%m/%y')
         data.account.amount = self.account.amount
+        self.account = data.account
+
+        self.account.update()
+        self.account.commit_or_rollback()
+
+        return Status.successfully_processed()
+
+    def activate_account(self):
+
+        data = AccountService.get_one(_id=self.account.id)
+
+        if data.account is None:
+            raise AppLogException(Status.account_does_not_exists())
+
+        if data.account.status == Account.STATUSES.active:
+            raise AppLogException(Status.account_is_already_activated())
+
+        data.account.status = Account.STATUSES.active
+
         self.account = data.account
 
         self.account.update()
@@ -110,7 +121,7 @@ class AccountService:
             filter_main = and_(
                 filter_main)
 
-        start = paginate_data.get('start') + 1 \
+        start = paginate_data.get('start') \
             if paginate_data is not None and paginate_data['start'] else 1
 
         length = paginate_data.get('length') \
@@ -121,8 +132,7 @@ class AccountService:
             _id=filter_data.get('account_id'),
         )
 
-        return data.items[0], data.total, Status.successfully_processed()
-
+        return data.items, data.total, Status.successfully_processed()
 
     @classmethod
     def get_one(cls, _id):
@@ -149,8 +159,7 @@ class AccountService:
                        acc_numb[8:12] + '-' + \
                        acc_numb[12:16]
 
-        cvv = fake.credit_card_security_code()
-        int(str(cvv)[:2])
+        cvv = randint(100, 999)
 
         return acc_numb, cvv
 
@@ -171,16 +180,55 @@ class AccountService:
             user_id=user_id))
 
     @staticmethod
-    def get_all_accounts_email_sender(user_id):
+    def get_all_accounts(user_id):
         from src.domain import UserService
         user = UserService.get_one(_id=user_id)
+
+        if user.user is None:
+            raise AppLogException(Status.user_does_not_exists())
+
+        data = Account.query_class.get_all_accounts(user_id=user_id)
+
+        list_data = []
+        schema = AccountSchema()
+        for i in data or []:
+            data_dict = schema.dump(i.Account)
+            data_dict['amount'] = i.amount or 0
+            list_data.append(data_dict)
+
+        return list_data
+
+    @staticmethod
+    def get_all_acc_email_sender(user_id):
+        from src.domain import UserService
+        user = UserService.get_one(_id=user_id)
+
+        if user.user is None:
+            raise AppLogException(Status.user_does_not_exists())
 
         data = Account.query_class.get_all_accounts(user_id=user_id)
         send_accounts_to_user(recipients=user.user.email, accounts=data,
                               length=len(data))
-        return data
+        list_data = []
+        schema = AccountSchema()
+        for i in data or []:
+            data_dict = schema.dump(i.Account)
+            data_dict['amount'] = i.amount or 0
+            list_data.append(data_dict)
+
+        return list_data
 
     @staticmethod
     def login_with_card(acc_no, date, cvv):
         data = Account.query.login_with_card(acc_no=acc_no, date=date, cvv=cvv)
+        return data
+
+    @staticmethod
+    def get_one_by_card_no_and_status(acc_no):
+        data = Account.query.get_one_by_card_no_and_status(acc_no=acc_no)
+        return data
+
+    @staticmethod
+    def get_full_account(account_id):
+        data = Account.query.get_full_account(account_id=account_id)
         return data

@@ -3,7 +3,7 @@ from datetime import datetime
 from uuid import uuid4
 
 import sqlalchemy as sa
-from sqlalchemy import orm
+from sqlalchemy import orm, func
 from sqlalchemy.dialects.postgresql import UUID
 
 from src import db
@@ -66,12 +66,40 @@ class AccountQuery(BaseModelMixin, db.Query):
             raise e
 
     @staticmethod
-    def get_all_accounts(user_id):
+    def get_full_account(account_id):
+        from src import Transaction
         try:
             return db.session.query(
-                Account
+                Account,
+                func.sum(Transaction.amount).label('amount')
+            ).join(
+                Transaction,
+                Account.id == Transaction.account_id,
+                isouter=True
+            ).filter(
+                Account.id == account_id
+            ).group_by(
+                Account.id
+            ).first()
+        except Exception as e:
+            db.session.rollback()
+            raise e
+
+    @staticmethod
+    def get_all_accounts(user_id):
+        from src import Transaction
+        try:
+            return db.session.query(
+                Account,
+                func.sum(Transaction.amount).label('amount')
+            ).join(
+                Transaction,
+                Account.id == Transaction.account_id,
+                isouter=True
             ).filter(
                 Account.user_id == user_id
+            ).group_by(
+                Account.id
             ).all()
         except Exception as e:
             db.session.rollback()
@@ -94,21 +122,13 @@ class AccountQuery(BaseModelMixin, db.Query):
 
     @staticmethod
     def get_paginated_transaction_for_account(filter_data, start, length, _id):
+        from src import Transaction
         try:
-            from src import Transaction
-            subquery = db.session.query(
-                Transaction.account_id
-            ).subquery()
-
             return db.session.query(
-                Account, subquery
-            ).join(
-                subquery,
-                Account.id == subquery.c.account_id,
-                isouter=False
+                Transaction
             ).filter(
                 filter_data,
-                Account.id == _id
+                Transaction.account_id == _id
             ).paginate(
                 page=start, per_page=length, error_out=False, max_per_page=50)
         except Exception as e:
@@ -129,6 +149,19 @@ class AccountQuery(BaseModelMixin, db.Query):
             db.session.rollback()
             raise e
 
+    @staticmethod
+    def get_one_by_card_no_and_status(acc_no):
+        try:
+            return db.session.query(
+                Account
+            ).filter(
+                Account.account_number == acc_no,
+                Account.status == Account.STATUSES.inactive
+            ).first() is not None
+        except Exception as e:
+            db.session.rollback()
+            raise e
+
 
 class AccountStatus(enum.Enum):
     active = 1
@@ -145,7 +178,6 @@ class Account(BaseModelMixin, ModelsMixin, db.Model):
     account_number = sa.Column(sa.String(length=19), nullable=False)
     expire_date = sa.Column(sa.Date())
     cvv = sa.Column(sa.String(length=3), nullable=False)
-    amount = sa.Column(sa.Integer())
     status = sa.Column(
         sa.Enum(
             AccountStatus,

@@ -1,4 +1,5 @@
 import datetime
+from random import randint
 
 import click
 from faker import Faker
@@ -134,14 +135,12 @@ def db_generate_data_migration():
                        acc_numb[8:12] + '-' + \
                        acc_numb[12:16]
 
-            cvv = faker.credit_card_security_code()
-            int(str(cvv)[:2])
+            cvv = randint(100, 999)
 
             account = Account(
                 account_number=acc_numb,
                 cvv=cvv,
                 expire_date=datetime.date(2023, 1, 1),
-                amount=0,
                 user_id=user.id
             )
             account.add()

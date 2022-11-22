@@ -14,6 +14,10 @@ class UserService:
         self.user = user
 
     def create(self):
+
+        if not UserService.check_if_email_exists(email=self.user.email):
+            raise AppLogException(Status.user_with_email_exists())
+
         self.user.add()
         self.user.commit_or_rollback()
 
@@ -49,9 +53,12 @@ class UserService:
         from src.domain import AccountService
 
         data = AccountService.login_with_card(acc_no=acc_no,
-                                              date=datetime.strptime(date,
-                                                                     '%m/%y'),
+                                              date=date,
                                               cvv=cvv)
+
+        data_card = AccountService.get_one_by_card_no_and_status(acc_no=acc_no)
+        if data_card:
+            raise AppLogException(Status.account_is_not_active())
 
         if not data:
             raise AppLogException(Status.wrong_credentials())
@@ -82,3 +89,7 @@ class UserService:
     @classmethod
     def get_one(cls, _id):
         return cls(user=User.query.get_one(_id=_id))
+
+    @staticmethod
+    def check_if_email_exists(email):
+        return User.query.check_if_email_exists(email=email)

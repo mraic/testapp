@@ -73,3 +73,15 @@ class Status:
     @classmethod
     def accounts_must_have_same_owner(cls):
         return cls(400, "Accounts must have same owner")
+
+    @classmethod
+    def user_with_email_exists(cls):
+        return cls(400, "User with this email already exists")
+
+    @classmethod
+    def account_is_already_activated(cls):
+        return cls(400, "Account is already activated")
+
+    @classmethod
+    def cvv_must_contain_3_digits(cls):
+        return cls(400, "Cvv must contain 3 digits")

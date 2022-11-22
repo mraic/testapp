@@ -2,7 +2,7 @@ import enum
 from uuid import uuid4
 
 import sqlalchemy as sa
-from sqlalchemy import or_, func, orm
+from sqlalchemy import orm
 from sqlalchemy.dialects.postgresql import UUID
 
 from src import db
@@ -13,9 +13,22 @@ class UserQuery(BaseModelMixin, db.Query):
 
     def get_one(self, _id):
         try:
+
             return self.filter(
                 User.id == _id
             ).first()
+        except Exception as e:
+            db.session.rollback()
+            raise e
+
+    @staticmethod
+    def check_if_email_exists(email):
+        try:
+            return db.session.query(
+                User
+            ).filter(
+                User.email == email
+            ).first() is None
         except Exception as e:
             db.session.rollback()
             raise e

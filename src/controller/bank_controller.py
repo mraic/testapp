@@ -10,7 +10,27 @@ from src.views.account_schema import response_one_account_schema, \
     get_all_user_pagination_data_accounts_schema, response_many_accounts_schema
 from src.views.transaction_schema import create_transaction_schema, \
     response_one_transaction_schema, transaction_between_accounts_schema
-from src.views.user_schema import response_one_user_schema
+from src.views.user_schema import response_one_user_schema, create_user_schema
+
+
+@doc(description="Create user route", tags=["Bank"])
+@bpp.post('/bank/create-user')
+@use_kwargs(create_user_schema, apply=True)
+@marshal_with(response_one_user_schema, 200, apply=True)
+@marshal_with(message_response_schema, 400, apply=True)
+def create_user(**kwargs):
+    user_service = UserService(
+        user=User(
+            first_name=kwargs.get('first_name'),
+            last_name=kwargs.get('last_name'),
+            email=kwargs.get('email'),
+            phone=kwargs.get('phone'),
+            city=kwargs.get('city'),
+        )
+    )
+    status = user_service.create()
+
+    return dict(data=user_service.user, message=status.message)
 
 
 @doc(description="Create account route", tags=["Bank"])
@@ -73,6 +93,21 @@ def deactivate_users_account(account_id):
         )
     )
     status = account_service.deactivate()
+
+    return dict(message=status.message, data=account_service.account)
+
+
+@doc(description="Activate user's account", tags=["Bank"])
+@bpp.put('/bank/activate-account/<uuid:account_id>')
+@marshal_with(response_one_account_schema, 200, apply=True)
+@marshal_with(message_response_schema, 400, apply=True)
+def activate_users_account(account_id):
+    account_service = AccountService(
+        account=Account(
+            id=account_id
+        )
+    )
+    status = account_service.activate_account()
 
     return dict(message=status.message, data=account_service.account)
 
